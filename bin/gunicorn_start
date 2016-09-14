@@ -1,0 +1,35 @@
+#!/bin/bash
+
+
+NAME="weixin"
+DJANGODIR=/data/webapp/weixin/weixin
+SOCKFILE=/data/webapp/weixin/run/gunicorn.sock
+USER=ubuntu
+GROUP=ubuntu
+NUM_WORKERS=3
+DJANGO_SETTINGS_MODULE=weixin.settings
+DJANGO_WSGI_MODULE=weixin.wsgi
+
+echo "Starting $NAME as `whoami`"
+
+cd $DJANGODIR
+source ../bin/activate
+export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
+export PYTHONPATH=$DJANGODIR:$PYTHONPATH
+
+
+RUNDIR=$(dirname $SOCKFILE)
+test -d $RUNDIR || mkdir -p $RUNDIR
+
+echo ${DJANGO_WSGI_MODULE} 
+echo $SOCKFILE
+echo `pwd`
+exec ../bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
+  --name $NAME \
+  --workers $NUM_WORKERS \
+  --user=$USER --group=$GROUP \
+  --bind=unix:$SOCKFILE \
+  --log-level=debug \
+  --log-file=/tmp/log
+
+
