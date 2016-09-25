@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
+import os
 from django.http.response import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
-import requests
+import requests,json
 from wechat_sdk import WechatBasic
 from wechat_sdk.exceptions import ParseError
 from wechat_sdk.exceptions import OfficialAPIError
 from wechat_sdk.messages import TextMessage, VoiceMessage, ImageMessage, VideoMessage, LinkMessage, LocationMessage, \
     EventMessage
-#from settings import WECHAT_TOKEN, WEIXIN_APPID, WEIXIN_APPSECRET
-
+from weixin.settings import BASE_DIR #,WECHAT_TOKEN,WEIXIN_APPID,WEIXIN_APPSECRET
+from django.shortcuts import render_to_response
+from django.template import Template, Context
 
 WECHAT_TOKEN='welion'
 WEIXIN_APPID = 'wx2dab89f15b53d205'
@@ -22,6 +23,9 @@ wechat_instance = WechatBasic(
     appsecret=WEIXIN_APPSECRET
 )
 
+
+JUHE_ROBOT='http://op.juhe.cn/robot/index'
+JUHE_KEY='2bd51d619a0b0b44868dc71a8036da39'
 
 @csrf_exempt
 def wechat(request):
@@ -50,6 +54,12 @@ def wechat(request):
 
     if isinstance(message, TextMessage):
         # 当前会话内容
+        img_dir = []
+        static_dir = os.path.join(BASE_DIR,'../static')
+        for item in os.listdir(static_dir):
+            if os.path.isdir(os.path.join(static_dir,item)):
+                img_dir.append(item)
+
         content = message.content.strip()
         if content == '博客' or content == 'blog' or content == '最新':
             reply_text = (
@@ -65,11 +75,44 @@ def wechat(request):
             )
             response = wechat_instance.response_text(content=reply_text)
             return HttpResponse(response, content_type="application/xml")
-        if content == 'ailili':
-            content = wechat_instance.response_text(content="?????")
+#        if content == 'pic':
+#            content = wechat_instance.response_text(content="http://zhongwanhua.cn/pic")
+#            return HttpResponse(content, content_type="application/xml")
+#        if content == 'lilisha':
+#            content = wechat_instance.response_text(content="http://zhongwanhua.cn/tumblr/lilisha")
+#            return HttpResponse(content, content_type="application/xml")
+#        if content == 'subin':
+#            content = wechat_instance.response_text(content="http://zhongwanhua.cn/tumblr/subin")
+#            return HttpResponse(content, content_type="application/xml")
+#        if content == 'ailili':
+#            content = wechat_instance.response_text(content="http://zhongwanhua.cn/tumblr/ailili")
+#            return HttpResponse(content, content_type="application/xml")
+#        if content == 'hbo':
+#            content = wechat_instance.response_text(content="http://zhongwanhua.cn/tumblr/hbo")
+#            return HttpResponse(content, content_type="application/xml")
+        if content in img_dir:
+            path_content = "http://zhongwanhua.cn/tumblr/" + str(content)
+            content = wechat_instance.response_text(content=path_content)
             return HttpResponse(content, content_type="application/xml")
         if content:
             keyword = content
+            params = {
+                "key":"2bd51d619a0b0b44868dc71a8036da39",
+                "info":keyword,
+                "dtype":"json",
+                "loc":"上海浦东",
+                "lon":"121550000",
+                "lat":"31220000",
+                "userid":"1"}
+            try:
+                resp = requests.get(JUHE_ROBOT,params=params).content
+                result = json.loads(resp)['result']
+                keyword = result['text']
+                print result
+            except :
+                print "Get juhe error"
+                
+
             content = wechat_instance.response_text(content=keyword)
             return HttpResponse(content, content_type="application/xml")
 
@@ -105,8 +148,61 @@ def wechat(request):
     response = wechat_instance.response_text(content=reply_text)
     return HttpResponse(response, content_type="application/xml")
 
-
-
+def pic(request):
+    
+    pic_name = os.listdir(BASE_DIR + '/../static/subin/')
+    pic_url=[]
+    for i in pic_name:
+        pic_url.append("/static/subin/" + i)
+    #print pic_url    
+    temp = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Girls</title>
+</head>
+<body>
+<ul>
+    {% for u in url %}
+        <p></p>
+        <img src="{{ u }}">{{u}}</img>
+        <p></p>
+    {% endfor %}
+</ul>
+</body>
+</html>
+"""
+    t = Template(temp)
+    html = t.render(Context({"url":pic_url}))
+    return HttpResponse(html)
 
 def index(request):
-    return HttpResponse('Hello!')
+    temp = """<script type="text/javascript" src="http://ip.chinaz.com/getip.aspx"></script>"""
+    return HttpResponse(temp)
+
+def tumblr(request,name):
+    
+    pic_name = os.listdir(BASE_DIR + '/../static/' + name +'/')
+    pic_url=[]
+    for i in pic_name:
+        pic_url.append("/static/" + name  + "/" + i)
+    temp = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Girls</title>
+</head>
+<body>
+<ul>
+    {% for u in url %}
+        <p></p>
+        <img src="{{ u }}">{{u}}</img>
+        <p></p>
+    {% endfor %}
+</ul>
+</body>
+</html>
+"""
+    t =Template(temp)
+    html = t.render(Context({"url":pic_url}))
+    return HttpResponse(html)

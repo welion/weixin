@@ -1,10 +1,9 @@
 #!/bin/bash
 
-
 NAME="weixin"
 DJANGODIR=/data/webapp/weixin/weixin
 SOCKFILE=/data/webapp/weixin/run/gunicorn.sock
-USER=ubuntu
+USER=weixin
 GROUP=ubuntu
 NUM_WORKERS=3
 DJANGO_SETTINGS_MODULE=weixin.settings

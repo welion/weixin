@@ -14,12 +14,16 @@ Including another URLconf
     2. Import the include() function: from django.conf.urls import url, include
     3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
+from django.views import static
 from django.conf.urls import url
 from django.contrib import admin
-from weixin.views import wechat, index
+from weixin.views import wechat, index, pic, tumblr
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^weixin/', wechat,name='weixin'),
     url(r'^index/', index, name='index'),
+    url(r'^pic/', pic, name='pic'),
+    url(r'^tumblr/(.*)/$', tumblr),
+    url(r'^static/(\?P<path>.*)','django.views.static.serve',{'document_root':'/data/webapp/weixin/static'}),
 ]
